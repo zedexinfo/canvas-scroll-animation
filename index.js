@@ -1,5 +1,5 @@
 const imageBaseUrl =
-  "https://oloidstaging.wpengine.com/wp-content/uploads/animation/compressedv2";
+  "https://oloidstaging.wpengine.com/wp-content/uploads/animation/compressedv2.1";
 class VideoSection {
   videoWrapper;
 
@@ -7,6 +7,8 @@ class VideoSection {
 
   activeFrame;
 
+  isImagesLoaded = false;
+  loadedImages = [];
   images = [];
 
   sectionIndex;
@@ -34,25 +36,48 @@ class VideoSection {
   }
 
   init() {
-    this.totalFrames = this.videoWrapper.getAttribute("data-total-frames");
+    this.totalFrames = Number(
+      this.videoWrapper.getAttribute("data-total-frames")
+    );
     this.activeFrame = 0;
     this.filePath = `animation-${this.sectionIndex + 1}`;
-    this.totalFrames = this.videoWrapper.dataset.totalFrames;
+    this.totalFrames = Number(this.videoWrapper.dataset.totalFrames);
+    this.loadedImages = Array(this.totalFrames).fill(false);
     this.initCanvas();
-    this.storeImages();
-    setTimeout(() => this.renderImage(), 2000);
+    //this.storeImages();
+    // setTimeout(() => this.renderImage(), 2000);
   }
 
-  storeImages() {
-    for (let i = 0; i < this.totalFrames; i++) {
-      let img = new Image();
-      img.src = this.getImageForFrame(i);
-      this.images.push(img);
-    }
+  loadImages() {
+    return new Promise((resolve) => {
+      for (let i = 0; i < this.totalFrames; i++) {
+        let img = new Image();
+
+        const loader = () => {
+          this.loadedImages[i] = true;
+
+          if (i === 0) {
+            this.renderImage();
+          }
+
+          const isImagesLoaded = this.loadedImages.every((loaded) => loaded);
+
+          if (isImagesLoaded) {
+            resolve(isImagesLoaded);
+          }
+        };
+
+        img.onload = loader;
+        img.onerror = loader;
+
+        img.src = this.getImageForFrame(i);
+        this.images.push(img);
+      }
+    });
   }
 
   getImageForFrame = (index) =>
-    `${imageBaseUrl}/${this.filePath}/${index + 1}.webp`;
+    `${imageBaseUrl}/${this.filePath}/${index + 1}.png`;
 
   initCanvas() {
     this.canvas = this.videoWrapper.getElementsByTagName("canvas").item(0);
@@ -64,20 +89,21 @@ class VideoSection {
   renderImage() {
     this.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.canvasContext.drawImage(this.images[this.activeFrame], 0, 0);
-    console.log(this.canvas);
-    console.log(this.canvasContext);
-    console.log(this.images[this.activeFrame]);
+    // console.log(this.canvas);
+    // console.log(this.canvasContext);
+    // console.log(this.images[this.activeFrame]);
   }
 
   setStartOffsetOfFrames(videoDuration) {
     this.frameDuration = videoDuration / this.totalFrames;
     let currentFrameStartOffset = 0;
-    for (let i = 0; i <= this.frameDuration; i++) {
+    for (let i = 0; i <= this.totalFrames; i++) {
       if (i === 0) {
         currentFrameStartOffset = this.videoStartOffset;
       } else {
         currentFrameStartOffset = currentFrameStartOffset + this.frameDuration;
       }
+
       this.frameStartOffsets.push(currentFrameStartOffset);
     }
   }
@@ -139,10 +165,11 @@ class VideoSectionWrapper {
     this.calculateStartOffsetOfVideos();
   }
 
-  init() {
+  async init() {
     this.wrapperElement = this.mainWrapper
       .getElementsByClassName("video-set")
       .item(0);
+    // console.log("item 0 is ", this.wrapperElement);
     this.videoSectionElements =
       this.mainWrapper.getElementsByClassName("video-wrapper");
     this.totalSections = this.videoSectionElements.length;
@@ -153,10 +180,22 @@ class VideoSectionWrapper {
     }
   }
 
+  loadImages() {
+    return Promise.all(this.videoSections.map((video) => video.loadImages()));
+  }
+
   calculateStartOffsetOfVideos() {
     const mainWrapperHeight = this.mainWrapper.offsetHeight;
-    const videoDuration = mainWrapperHeight / this.totalSections - 100; // need to figure out the value of 100
+    // console.log("mainwrapper height", mainWrapperHeight);
+    console.log(mainWrapperHeight);
+    // const videoDuration = (mainWrapperHeight / this.totalSections) - 100; // need to figure out the value of 100
+    const videoDuration = mainWrapperHeight / this.totalSections;
+
+    console.log({ videoDuration });
+    // console.log("video duration", videoDuration);
+
     const mainWrapperOffsetTop = this.mainWrapper.offsetTop;
+    // console.log("offset duration", mainWrapperOffsetTop);
     let currentStartOffset = 0;
     for (let i = 0; i <= this.totalSections; i++) {
       if (i === 0) {
@@ -231,36 +270,59 @@ class VideoSlider {
 
   initDimensions() {
     this.mainWrapperHeight = this.mainWrapper.offsetHeight;
+    // console.log("offset height is ", this.mainWrapperHeight);
+
     this.mainWrapperTopOffset = this.mainWrapper.offsetTop;
+    // console.log("offset top is ", this.mainWrapperTopOffset);
+
     this.windowHeight = window.innerHeight;
+    // console.log("window height is ", this.windowHeight);
   }
 
   initVideoSectionWrapper() {
     this.videoSectionWrapper = new VideoSectionWrapper(this.mainWrapper);
+    this.videoSectionWrapper.loadImages().then((response) => {
+      document.getElementById("mtag-preloader-slider").remove();
+    });
+    // console.log("videosection is", this.videoSectionWrapper);
   }
 
   initObserver() {
     const options = {
       root: null,
       rootMargin: "0px",
-      threshold: 0.99,
+      threshold: 0.8,
     };
+    // console.log("on start scroll position", window.pageYOffset);
     const observer = new IntersectionObserver(this.initScrollListener, options);
     observer.observe(this.videoSectionWrapper.wrapperElement);
   }
 
   initScrollListener = (entries) => {
+    this.handleScrollEvent();
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
+        // console.log("intersecting");
         window.addEventListener("scroll", this.handleScrollEvent);
       } else {
+        // console.log("not intersecting");
         removeEventListener("scroll", this.handleScrollEvent);
       }
     });
   };
 
   handleScrollEvent = (e) => {
-    this.videoSectionWrapper.onScroll(window.pageYOffset);
+    // console.log(
+    //   "scolling window",
+    //   window.pageYOffset +
+    //     (window.pageYOffset * this.windowHeight) /
+    //       (this.mainWrapperHeight - this.windowHeight)
+    // );
+    this.videoSectionWrapper.onScroll(
+      window.pageYOffset +
+        (window.pageYOffset * this.windowHeight) /
+          (this.mainWrapperHeight - this.windowHeight)
+    );
   };
 
   handleScreenResize() {
@@ -274,11 +336,11 @@ class VideoSlider {
     const video_frame_wrappers = d.getElementsByClassName(
       "video_frame_wrapper"
     );
+
     for (let i = 0; i < video_frame_wrappers.length; i++) {
+      // console.log(video_frame_wrappers[i]);
       new VideoSlider(video_frame_wrappers[i]);
     }
   }
   window.onload = init;
 })(window, document);
-
-console.log("here");

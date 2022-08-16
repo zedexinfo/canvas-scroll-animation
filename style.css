@@ -18,7 +18,7 @@ body {
 
 .video_frame_wrapper .video-set {
   position: sticky;
-  top: 0;
+  top: 100px;
   left: 0;
   right: 0;
   height: 100vh;
@@ -33,6 +33,7 @@ body {
   height: 100vh;
   pointer-events: none;
 }
+
 .video-wrapper.hide {
   opacity: 0;
 }
@@ -43,20 +44,28 @@ canvas {
   width: 100vw;
 }
 
-.video-text.part-1 {
+/* .video-text.part-1 {
   top: 0vh;
+} */
+
+.video-text.part-1 {
+  top: 130vh;
 }
+
 .video-text.part-2 {
-  top: 200vh;
+  top: 230vh;
 }
+
 .video-text.part-3 {
-  top: 350vh;
+  top: 330vh;
 }
+
 .video-text.part-4 {
-  top: 450vh;
+  top: 490vh;
 }
+
 .video-text.part-5 {
-  top: 650vh;
+  top: 630vh;
 }
 
 .video-text {
@@ -70,8 +79,9 @@ canvas {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0 14vw;
+  max-width: 1200px;
   right: 0;
+  margin: 0 auto;
   box-sizing: border-box;
 }
 
@@ -99,8 +109,6 @@ canvas {
 }
 
 .anwrapper {
-  max-width: 1220px;
-  margin: 0 auto;
   position: RELATIVE;
 }
 
@@ -114,4 +122,22 @@ canvas {
   position: absolute;
   overflow: hidden;
   top: 0;
+}
+
+/****** M-tag loader css ******/
+#mtag-preloader-slider {
+  position: sticky;
+  height: calc(100vh - 100px);
+  width: 100vw;
+  z-index: 2147483657 !important;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  text-align: center;
+  margin: 0 auto;
+  flex-direction: column;
+  justify-content: center;
+  background: #fff;
 }
