@@ -113,7 +113,7 @@ canvas {
 }
 
 .antext h2 {
-  color: #fff;
+  color:black;
   font-size: 44px;
 }
 
@@ -127,7 +127,7 @@ canvas {
 /****** M-tag loader css ******/
 #mtag-preloader-slider {
   position: sticky;
-  height: calc(100vh - 100px);
+  height: calc(100vh + 100px);
   width: 100vw;
   z-index: 2147483657 !important;
   top: 0;
@@ -140,4 +140,11 @@ canvas {
   flex-direction: column;
   justify-content: center;
   background: #fff;
+}
+
+.mtagloader-blob{
+  color: red;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 5px;
 }
